@@ -1,6 +1,6 @@
 import { ChatWrapper } from "@/components/ChatWrapper"
 import { redis } from "@/lib/redis"
-import { ragChat } from "@/lib/tag-chat"
+import { ragChat } from "@/lib/rag-chat"
 
 interface PageProps {
     params: {
