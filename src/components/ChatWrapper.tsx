@@ -5,7 +5,7 @@ import { Messages } from "./Messages"
 import { ChatInput } from "./ChatInput"
 
 export const ChatWrapper = ({sessionId}: {sessionId: string}) => {
-    const {messages, handleInputChange, handleSubmit, input} = useChat({
+    const {messages, handleInputChange, handleSubmit, input, setInput} = useChat({
         api: "/api/chat-stream",
         body: { sessionId },
     })
@@ -16,7 +16,12 @@ export const ChatWrapper = ({sessionId}: {sessionId: string}) => {
             <Messages messages={messages}/>
             </div>
 
-            <ChatInput />
+            <ChatInput
+                input={input}
+                handleInputChange={handleInputChange}
+                handleSubmit={handleSubmit}
+                setInput={setInput} 
+            />
         </div>
     )
 }
