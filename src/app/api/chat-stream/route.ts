@@ -2,12 +2,32 @@ import { ragChat } from "@/lib/rag-chat";
 import { aiUseChatAdapter } from "@upstash/rag-chat/nextjs";
 import { NextRequest } from "next/server";
 
+export const maxDuration = 300; // Set max duration to 300 seconds (5 minutes)
+
 export const POST = async (req: NextRequest) => {
-  const { messages, sessionId } = await req.json();
+  try {
+    const { messages, sessionId } = await req.json();
 
-  const lastMessage = messages[messages.length - 1].content;
+    if (!messages || !sessionId) {
+      return new Response('Missing required fields', { status: 400 });
+    }
 
-  const response = await ragChat.chat(lastMessage, { streaming: true, sessionId });
+    const lastMessage = messages[messages.length - 1].content;
 
-  return aiUseChatAdapter(response);
+    const response = await ragChat.chat(lastMessage, { 
+      streaming: true, 
+      sessionId,
+      config: {
+        temperature: 0.7,
+        max_tokens: 1000, // Increase max tokens
+        presence_penalty: 0.6,
+        frequency_penalty: 0.6
+      }
+    });
+
+    return aiUseChatAdapter(response);
+  } catch (error) {
+    console.error('Chat stream error:', error);
+    return new Response('Internal Server Error', { status: 500 });
+  }
 };
