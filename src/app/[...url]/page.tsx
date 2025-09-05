@@ -2,6 +2,8 @@ import { ChatWrapper } from "@/components/ChatWrapper";
 import { ragChat } from "@/lib/rag-chat";
 import { redis } from "@/lib/redis";
 import { cookies } from "next/headers";
+import { WebpageViewer } from "@/components/WebpageViewer";
+import { SplitPaneLayout } from "@/components/SplitPaneLayout";
 
 interface PageProps {
   params: {
@@ -55,16 +57,18 @@ const Page = async ({ params }: PageProps) => {
   const isAlreadyIndexed = await redis.sismember("indexed-urls", reconstructedUrl);
   const initialMessages = await ragChat.history.getMessages({ amount: 10, sessionId });
 
-  if (!isAlreadyIndexed) {
-    try {
-      const content = await fetchWebPageContent(reconstructedUrl);
-      
+  // Always fetch the content for display
+  let pageContent = '';
+  try {
+    pageContent = await fetchWebPageContent(reconstructedUrl);
+    
+    if (!isAlreadyIndexed) {
       // Split content into smaller chunks if it's too large
       const chunkSize = 4000; // Adjust this value based on your needs
       const chunks = [];
       
-      for (let i = 0; i < content.length; i += chunkSize) {
-        chunks.push(content.slice(i, i + chunkSize));
+      for (let i = 0; i < pageContent.length; i += chunkSize) {
+        chunks.push(pageContent.slice(i, i + chunkSize));
       }
 
       // Add each chunk to the context
@@ -76,12 +80,28 @@ const Page = async ({ params }: PageProps) => {
       }
 
       await redis.sadd("indexed-urls", reconstructedUrl);
-    } catch (error) {
-      console.error('Error processing webpage:', error);
     }
+  } catch (error) {
+    console.error('Error processing webpage:', error);
+    pageContent = '<div class="p-4 text-red-500">Error loading webpage content</div>';
   }
 
-  return <ChatWrapper sessionId={sessionId} initialMessages={initialMessages} />;
+  return (
+    <SplitPaneLayout
+      leftPane={
+        <WebpageViewer 
+          content={pageContent} 
+          url={reconstructedUrl}
+        />
+      }
+      rightPane={
+        <ChatWrapper 
+          sessionId={sessionId} 
+          initialMessages={initialMessages}
+        />
+      }
+    />
+  );
 };
 
 export default Page;
